@@ -1,5 +1,10 @@
+import dns from 'node:dns';
+
 import app from './app.js';
 import { connectToDb } from './src/db/connect.js';
+
+// Use Google's DNS to resolve MongoDB Atlas SRV records.
+dns.setServers(['8.8.8.8', '8.8.4.4']);
 
 const NODE_ENV = process.env.NODE_ENV?.toLowerCase() || 'production';
 const PORT = process.env.PORT || 3000;

@@ -88,8 +88,90 @@ const hookTrainsCatalog = async () => {
     }
 };
 
+const hookTripsCatalog = async () => {
+    const listEl = document.getElementById('trips-list');
+    const templateEl = document.getElementById('trip-card-template');
+    const loadingEl = document.getElementById('trips-loading');
+    const errorEl = document.getElementById('trips-error');
+
+    if (!listEl || !templateEl) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/trips');
+        if (!response.ok) {
+            throw new Error(`Failed to load trips (${response.status})`);
+        }
+
+        const trips = await response.json();
+        const fragment = document.createDocumentFragment();
+
+        trips.forEach((trip) => {
+            const card = templateEl.content.cloneNode(true);
+
+            const regionClass = trip.region ? `route-card ${trip.region}` : 'route-card';
+            const cardRoot = card.querySelector('.route-card');
+            if (cardRoot) {
+                cardRoot.className = regionClass;
+            }
+
+            card.querySelector('[data-field="name"]').textContent = trip.name ?? '';
+            card.querySelector('[data-field="region"]').textContent = trip.region ?? '';
+            card.querySelector('[data-field="start-station"]').textContent = trip.startStation ?? '';
+            card.querySelector('[data-field="end-station"]').textContent = trip.endStation ?? '';
+            card.querySelector('[data-field="duration"]').textContent = trip.duration ?? '';
+            card.querySelector('[data-field="distance"]').textContent = trip.distance ?? '';
+            card.querySelector('[data-field="description"]').textContent = trip.description ?? '';
+
+            const bestSeasonEl = card.querySelector('[data-field="best-season"]');
+            if (bestSeasonEl) {
+                bestSeasonEl.textContent = trip.bestSeason ?? '';
+            }
+            const seasonBadgeEl = card.querySelector('[data-field="season-badge"]');
+            if (seasonBadgeEl && trip.bestSeason) {
+                seasonBadgeEl.className = `season-badge season-${trip.bestSeason}`;
+            }
+
+            const highlightsEl = card.querySelector('[data-field="highlights"]');
+            if (highlightsEl) {
+                highlightsEl.replaceChildren();
+                if (Array.isArray(trip.highlights)) {
+                    trip.highlights.forEach((highlight) => {
+                        const span = document.createElement('span');
+                        span.className = 'highlight-tag';
+                        span.textContent = highlight;
+                        highlightsEl.appendChild(span);
+                    });
+                }
+            }
+
+            const detailsLinkEl = card.querySelector('[data-field="details-link"]');
+            if (detailsLinkEl && trip.id) {
+                detailsLinkEl.href = `/trips/${trip.id}`;
+            }
+
+            fragment.appendChild(card);
+        });
+
+        listEl.replaceChildren(fragment);
+        if (loadingEl) {
+            loadingEl.hidden = true;
+        }
+    } catch (error) {
+        if (loadingEl) {
+            loadingEl.hidden = true;
+        }
+        if (errorEl) {
+            errorEl.hidden = false;
+            errorEl.textContent = 'Unable to load trips right now. Please try again in a moment.';
+        }
+    }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     hookRegionSorter();
     hookSeasonSorter();
     hookTrainsCatalog();
+    hookTripsCatalog();
 });
