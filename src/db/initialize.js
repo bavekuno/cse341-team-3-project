@@ -12,6 +12,11 @@ const starterCollections = [
   ['trains', trains]
 ];
 
+const standardRoles = [
+  { name: 'customer', description: 'Standard customer account' },
+  { name: 'admin', description: 'Administrator account' }
+];
+
 const initializeDatabase = async (db) => {
   if (!db) {
     throw new Error('A database connection is required to initialize data.');
@@ -26,6 +31,20 @@ const initializeDatabase = async (db) => {
   const confirmations = db.collection('confirmations');
   await confirmations.deleteMany({});
   await confirmations.createIndex({ id: 1 }, { unique: true });
+
+  const roles = db.collection('roles');
+
+  for (const role of standardRoles) {
+    await roles.updateOne(
+      { name: role.name },
+      { $setOnInsert: role },
+      { upsert: true }
+    );
+  }
+
+  await roles.createIndex({ name: 1 }, { unique: true });
+  await db.collection('users').createIndex({ username: 1 }, { unique: true });
+  await db.collection('users').createIndex({ email: 1 }, { unique: true });
 };
 
-export { initializeDatabase, starterCollections };
+export { initializeDatabase, starterCollections, standardRoles };

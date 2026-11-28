@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { MongoClient } from 'mongodb';
 
 let database;
@@ -16,15 +17,29 @@ const connectToDb = async (options = {}) => {
   }
 
   client = new MongoClient(connectionString);
-  await client.connect();
-  database = client.db(databaseName);
-  return database;
+
+  try {
+    await client.connect();
+    database = client.db(databaseName);
+
+    if (mongoose.connection.readyState !== 1) {
+      await mongoose.connect(connectionString, { dbName: databaseName });
+    }
+
+    return database;
+  } catch (error) {
+    await client.close();
+    client = undefined;
+    database = undefined;
+    throw error;
+  }
 };
 
 const getDb = () => {
   if (!database) {
     throw new Error('Database not initialized. Call connectToDb first.');
   }
+
   return database;
 };
 
@@ -33,6 +48,10 @@ const closeDb = async () => {
     await client.close();
     client = undefined;
     database = undefined;
+  }
+
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.disconnect();
   }
 };
 
