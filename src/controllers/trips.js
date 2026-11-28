@@ -2,33 +2,20 @@
 import {
     getAllTrips,
     getTripById,
-    getTripRegions,
-    getTripSeasons,
 } from '../models/trips.js';
 
 import { getDb } from '../db/connect.js';
 
-// Display the trips listing page.
 export const listTripsPage = async (req, res, next) => {
     try {
-        const [regions, trips, seasons] = await Promise.all([
-            getTripRegions(),
-            getAllTrips(),
-            getTripSeasons(),
-        ]);
-
         return res.render('trips/list', {
             title: 'Scenic Train Trips',
-            regions,
-            trips,
-            seasons,
         });
     } catch (error) {
         return next(error);
     }
 };
 
-// Display an individual trip details page.
 export const tripDetailsPage = async (req, res, next) => {
     try {
         const { tripId } = req.params;
@@ -39,7 +26,6 @@ export const tripDetailsPage = async (req, res, next) => {
             return res.status(404).send('Trip not found');
         }
 
-        // Retrieve schedules using the existing native MongoDB connection.
         details.schedules = await getDb()
             .collection('schedules')
             .find({ tripId })
@@ -54,40 +40,28 @@ export const tripDetailsPage = async (req, res, next) => {
     }
 };
 
-// Return all trips through the JSON API.
 export const getAllTripsApi = async (req, res) => {
     try {
         const trips = await getAllTrips();
-
-        return res.status(200).json({ trips });
+        return res.status(200).json(trips);
     } catch (error) {
         console.error('Failed to fetch trips:', error);
-
-        return res.status(500).json({
-            error: 'Failed to fetch trips',
-        });
+        return res.status(500).json({ message: 'Failed to retrieve trips' });
     }
 };
 
-// Return one trip through the JSON API.
 export const getTripByIdApi = async (req, res) => {
     try {
-        const { tripId } = req.params;
-
-        const trip = await getTripById(tripId);
+        const { id } = req.params;
+        const trip = await getTripById(id);
 
         if (!trip) {
-            return res.status(404).json({
-                error: 'Trip not found',
-            });
+            return res.status(404).json({ message: 'Trip not found' });
         }
 
-        return res.status(200).json({ trip });
+        return res.status(200).json(trip);
     } catch (error) {
         console.error('Failed to fetch trip:', error);
-
-        return res.status(500).json({
-            error: 'Failed to fetch trip',
-        });
+        return res.status(500).json({ message: 'Failed to retrieve trip' });
     }
 };
